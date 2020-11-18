@@ -31,10 +31,10 @@ function SqlImport(editorui){
     }
 
     function ForeignKeyModel() {
-        this.PrimaryKeyName = null;
+        this.ForeignKeyPropertyName = null;
         this.ReferencesPropertyName = null
 
-        this.PrimaryKeyTableName = null;
+        this.ForeignKeyTableName = null;
         this.ReferencesTableName = null;
 
         this.ForeignKeyName = null;
@@ -48,11 +48,11 @@ function SqlImport(editorui){
         this.ConstraintName = null;
     }
 
-    function CreateForeignKey(primaryKeyName, primaryKeyTableName, referencesPropertyName, referencesTableName, foreignKeyName, isDestination) {
+    function CreateForeignKey(foreignKeyPropName, foreignKeyTableName, referencesPropertyName, referencesTableName, foreignKeyName, isDestination) {
         var foreignKey = new ForeignKeyModel;
 
-        foreignKey.PrimaryKeyTableName = primaryKeyTableName;
-        foreignKey.PrimaryKeyName = primaryKeyName;
+        foreignKey.ForeignKeyTableName = foreignKeyTableName;
+        foreignKey.ForeignKeyPropertyName = foreignKeyPropName;
         foreignKey.ReferencesPropertyName = referencesPropertyName;
         foreignKey.ReferencesTableName = referencesTableName;
         foreignKey.IsDestination = (isDestination !== undefined && isDestination !== null) ? isDestination : false;
@@ -79,6 +79,7 @@ function SqlImport(editorui){
                     tableModel.Properties.forEach(function(propertyModel) {
                         if (propertyModel.Name === primaryModel.PrimaryKeyName) {
                             propertyModel.IsPrimaryKey = true;
+                            propertyModel.PrimaryKey = primaryModel;
                         }
                     });
                 }
@@ -88,23 +89,23 @@ function SqlImport(editorui){
 
     function AssignForeignKey(foreignKeyModel) {
         tableList.forEach(function(tableModel) {
-            if (tableModel.Name === foreignKeyModel.ReferencesTableName) {
-                tableModel.Properties.forEach(function(propertyModel) {
-                    if (propertyModel.Name === foreignKeyModel.ReferencesPropertyName) {
-                        propertyModel.IsForeignKey = true;
-                        propertyModel.ForeignKey.push(foreignKeyModel);
-                    }
-                });
-            }
-
-            // if (tableModel.Name === foreignKeyModel.PrimaryKeyTableName) {
+            // if (tableModel.Name === foreignKeyModel.ReferencesTableName) {
             //     tableModel.Properties.forEach(function(propertyModel) {
-            //         if (propertyModel.Name === foreignKeyModel.PrimaryKeyName) {
+            //         if (propertyModel.Name === foreignKeyModel.ReferencesPropertyName) {
             //             propertyModel.IsForeignKey = true;
             //             propertyModel.ForeignKey.push(foreignKeyModel);
             //         }
             //     });
             // }
+
+            if (tableModel.Name === foreignKeyModel.ForeignKeyTableName) {
+                tableModel.Properties.forEach(function(propertyModel) {
+                    if (propertyModel.Name === foreignKeyModel.ForeignKeyPropertyName) {
+                        propertyModel.IsForeignKey = true;
+                        propertyModel.ForeignKey.push(foreignKeyModel);
+                    }
+                });
+            }
         });
     }
 
@@ -117,8 +118,8 @@ function SqlImport(editorui){
         //     propertyModel.ForeignKey.forEach(function(foreignKeyModel) {
 
         //         //We do not want the foreign key to be duplicated in our table to the same property
-        //         if (tableName !== foreignKeyModel.PrimaryKeyTableName || (tableName === foreignKeyModel.PrimaryKeyTableName && propertyModel.Name !== foreignKeyModel.PrimaryKeyName)) {
-        //             cellName += ' | ' + foreignKeyModel.PrimaryKeyTableName + '(' + foreignKeyModel.PrimaryKeyName + ')';
+        //         if (tableName !== foreignKeyModel.ForeignKeyTableName || (tableName === foreignKeyModel.ForeignKeyTableName && propertyModel.Name !== foreignKeyModel.PrimaryKeyName)) {
+        //             cellName += ' | ' + foreignKeyModel.ForeignKeyTableName + '(' + foreignKeyModel.PrimaryKeyName + ')';
         //         }
         //     })
         // }
@@ -200,7 +201,7 @@ function SqlImport(editorui){
             // foreignKeyList.push(foreignKeyOriginModel);            
 
             //Create ForeignKey
-            var foreignKeyDestinationModel = CreateForeignKey(referencedPropertyName, referencedTableName, foreignKey, alterTableName, fkName, false);
+            var foreignKeyDestinationModel = CreateForeignKey(foreignKey, alterTableName, referencedPropertyName, referencedTableName, fkName, false);
 
             //Add ForeignKey Destination
             foreignKeyList.push(foreignKeyDestinationModel);
@@ -469,16 +470,16 @@ function SqlImport(editorui){
     function CreateEdgeUI(){
         foreignKeyList.forEach(foreignKey => {
 
-            const {PrimaryKeyName, ReferencesPropertyName, ForeignKeyName, isDestination, PrimaryKeyTableName, ReferencesTableName,} = foreignKey;
-            const source = cells.find(cell => cell.value === PrimaryKeyTableName); //suppliers
-            const target = cells.find(cell => cell.value === ReferencesTableName); //customers
+            const {ForeignKeyPropertyName, ReferencesPropertyName, ForeignKeyName, isDestination, ForeignKeyTableName, ReferencesTableName,} = foreignKey;
+            const source = cells.find(cell => cell.value === ReferencesTableName);            
+            const target = cells.find(cell => cell.value === ForeignKeyTableName); 
 
             const sourceGeometry = source?.geometry;
             const targetGeometry = target?.geometry;
 
             const edgeGeometry = getEdgeGeometry(sourceGeometry, targetGeometry);
             
-            const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;FKName=${ForeignKeyName};FKSource=${PrimaryKeyTableName};FKTarget=${ReferencesTableName};FKSourceProp=${PrimaryKeyName};FKDestination=${ReferencesPropertyName};PhysicalEdge=true;`, edgeGeometry)
+            const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;FKName=${ForeignKeyName};FKTableName=${ForeignKeyTableName};FKRefTableName=${ReferencesTableName};FKPropName=${ForeignKeyPropertyName};FKRefPropName=${ReferencesPropertyName};PhysicalEdge=true;`, edgeGeometry)
             edgeCells.push(edge);
         })
 
@@ -502,9 +503,18 @@ function SqlImport(editorui){
             //Define table size width
             var maxNameLenght = 100 + tableModel.Name.length;
 
+            const pkProp = tableModel.Properties.find(prop => prop.IsPrimaryKey);
+            const pkModel = pkProp?.PrimaryKey;
+            const pkName = pkModel?.ConstraintName;
+            const pkConstraintStyle = pkName ? `PKConstraintName=${pkName}` : '';
+
+            const addStyle = `PhysicalTable=true;${pkConstraintStyle};`;
             //Create Table
             tableCell = new mxCell(tableModel.Name, new mxGeometry(dx, 0, maxNameLenght, 26),
-                'swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;fillColor=#e0e0e0;horizontalStack=0;resizeParent=1;resizeLast=0;collapsible=1;marginBottom=0;swimlaneFillColor=#ffffff;align=center;PhysicalTable=true;');
+                'swimlane;fontStyle=0;childLayout=stackLayout;horizontal=1;startSize=26;' +
+                'fillColor=#e0e0e0;horizontalStack=0;resizeParent=1;resizeLast=0;' +
+                'collapsible=1;marginBottom=0;swimlaneFillColor=#ffffff;align=center;' + 
+                addStyle);
             tableCell.vertex = true;
 
             //Resize row
