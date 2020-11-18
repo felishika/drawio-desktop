@@ -1831,6 +1831,11 @@ mxStencilRegistry.allowEval = false;
 				          { name: 'VSDX Documents', extensions: ['vsdx'] }
 				       ];
 				break;
+				case 'sql': 
+					filters = [
+						{name: 'SQL scripts', extensions: ['sql']}
+					];
+				break;
 				case 'html':
 					filters = [
 				          { name: 'HTML Documents', extensions: ['html'] }

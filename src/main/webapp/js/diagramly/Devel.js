@@ -233,6 +233,9 @@ mxscript(drawDevUrl + 'js/diagramly/vsdx/bmpDecoder.js');
 mxscript(drawDevUrl + 'js/diagramly/vsdx/importer.js');
 mxscript(drawDevUrl + 'js/jszip/jszip.min.js');
 
+// Sql support
+mxscript(drawDevUrl + 'js/diagramly/sql/SqlExport.js');
+
 // GraphMl Import
 mxscript(drawDevUrl + 'js/diagramly/graphml/mxGraphMlCodec.js');
 

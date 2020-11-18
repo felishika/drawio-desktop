@@ -757,6 +757,11 @@
 		{
 			editorUi.exportVisio();
 		}));
+
+		editorUi.actions.put('exportSql', new Action(mxResources.get('formatSql') + '...', function()
+		{
+			editorUi.exportSql();
+		}));
 		
 		if (isLocalStorage && localStorage != null && urlParams['embed'] != '1')
 		{
@@ -1992,6 +1997,11 @@
 			}
 
 			this.addMenuItems(menu, ['-', 'exportHtml', 'exportXml', 'exportUrl'], parent);
+
+			if (!mxClient.IS_IE && (typeof(SqlExport) !== 'undefined' || !editorUi.isOffline()))
+			{
+				this.addMenuItems(menu, ['exportSql'], parent);
+			}
 
 			if (!editorUi.isOffline())
 			{

@@ -7050,6 +7050,51 @@
 		}
 	};
 	
+
+	/**
+	 * Export the diagram to SQL
+	 */
+	EditorUi.prototype.exportSql = function()
+	{
+		var delayed = mxUtils.bind(this, function()
+		{
+			this.loadingExtensions = false;
+			
+			if (typeof SqlExport  !== 'undefined')
+			{
+				try
+				{
+					var expSuccess = new SqlExport(this).exportCurrentDiagrams();
+					
+					if (!expSuccess)
+					{
+						this.handleError({message: mxResources.get('unknownError')});
+					}
+				}
+				catch (e)
+				{
+					this.handleError(e);
+				}
+			}
+			else
+			{
+				this.spinner.stop();
+				this.handleError({message: mxResources.get('serviceUnavailableOrBlocked')});
+			}
+		});
+		
+		if (typeof SqlExport === 'undefined' && !this.loadingExtensions && !this.isOffline(true))
+		{
+			this.loadingExtensions = true;
+			mxscript('js/extensions.min.js', delayed);
+		}
+		else
+		{
+			delayed();
+		}
+	};
+	
+
 	/**
 	 * Imports the given Lucidchart data.
 	 */
