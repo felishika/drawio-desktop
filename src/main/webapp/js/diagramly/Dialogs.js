@@ -1889,90 +1889,93 @@ var ParseDialog = function(editorUi, title, defaultType)
 				});
 			}
 		}
-		else if (type == 'table')
-		{
-			var tableCell = null;
-			var rows = null;
-			var cells = [];
-			var dx = 0;
-
-			for (var i = 0; i < lines.length; i++)
-			{
-				var tmp = mxUtils.trim(lines[i]);
-				
-				if (tmp.substring(0, 12).toLowerCase() == 'create table')
-				{
-					var name = mxUtils.trim(tmp.substring(12));
-					
-					if (name.charAt(name.length - 1) == '(')
-					{
-						name = mxUtils.trim(name.substring(0, name.length - 1));
-					}
-					
-					tableCell = new mxCell(name, new mxGeometry(dx, 0, 160, 40),
-						'shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;');
-					tableCell.vertex = true;
-					cells.push(tableCell);
-					
-					var size = editorUi.editor.graph.getPreferredSizeForCell(rowCell);
-		   			
-		   			if (size != null)
-		   			{
-		   				tableCell.geometry.width = size.width + 10;
-		   			}
-				}
-				else if (tableCell != null && tmp.charAt(0) == ')')
-				{
-					dx += tableCell.geometry.width + 40;
-					tableCell = null;
-				}
-				else if (tmp != '(' && tableCell != null)
-				{
-					var name = tmp.substring(0, (tmp.charAt(tmp.length - 1) == ',') ? tmp.length - 1 : tmp.length);
-					
-					if (name.substring(0, 11).toLowerCase() != 'primary key')
-					{
-						var pk = name.toLowerCase().indexOf('primary key');
-						name = name.replace(/primary key/i, '');
-						
-						var rowCell = new mxCell('', new mxGeometry(0, 0, 160, 30),
-							'shape=partialRectangle;collapsible=0;dropTarget=0;pointerEvents=0;fillColor=none;' +
-							'points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=' +
-							((pk > 0) ? '1' : '0') + ';');
-						rowCell.vertex = true;
-						
-						var left = new mxCell((pk > 0) ? 'PK' : '', new mxGeometry(0, 0, 30, 30),
-							'shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;' + ((pk > 0) ? 'fontStyle=1;' : ''));
-						left.vertex = true;
-						rowCell.insert(left);
-						
-						var right = new mxCell(name, new mxGeometry(30, 0, 130, 30),
-							'shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;spacingLeft=6;' + ((pk > 0) ? 'fontStyle=5;' : ''));
-						right.vertex = true;
-						rowCell.insert(right);
-						
-			   			var size = editorUi.editor.graph.getPreferredSizeForCell(right);
-			   			
-			   			if (size != null && tableCell.geometry.width < size.width + 30)
-			   			{
-			   				tableCell.geometry.width = Math.min(320, Math.max(tableCell.geometry.width, size.width + 30));
-			   			}
-			   			
-			   			tableCell.insert(rowCell);
-			   			tableCell.geometry.height += 30;
-					}
-				}
-			}
-			
-			if (cells.length > 0)
-			{
-				var graph = editorUi.editor.graph;
-				insertPoint = (mxEvent.isAltDown(evt)) ? insertPoint :
-					graph.getCenterInsertPoint(graph.getBoundingBoxFromGeometry(cells, true));
-				graph.setSelectionCells(graph.importCells(cells, insertPoint.x, insertPoint.y));
-				graph.scrollCellToVisible(graph.getSelectionCell());
-			}
+		else if (type == 'table'){
+			var cells = editorUi.importSql(text);					
 		}
+		// else if (type == 'table')
+		// {
+		// 	var tableCell = null;
+		// 	var rows = null;
+		// 	var cells = [];
+		// 	var dx = 0;
+
+		// 	for (var i = 0; i < lines.length; i++)
+		// 	{
+		// 		var tmp = mxUtils.trim(lines[i]);
+				
+		// 		if (tmp.substring(0, 12).toLowerCase() == 'create table')
+		// 		{
+		// 			var name = mxUtils.trim(tmp.substring(12));
+					
+		// 			if (name.charAt(name.length - 1) == '(')
+		// 			{
+		// 				name = mxUtils.trim(name.substring(0, name.length - 1));
+		// 			}
+					
+		// 			tableCell = new mxCell(name, new mxGeometry(dx, 0, 160, 40),
+		// 				'shape=table;startSize=30;container=1;collapsible=1;childLayout=tableLayout;fixedRows=1;rowLines=0;fontStyle=1;align=center;resizeLast=1;');
+		// 			tableCell.vertex = true;
+		// 			cells.push(tableCell);
+					
+		// 			var size = editorUi.editor.graph.getPreferredSizeForCell(rowCell);
+		   			
+		//    			if (size != null)
+		//    			{
+		//    				tableCell.geometry.width = size.width + 10;
+		//    			}
+		// 		}
+		// 		else if (tableCell != null && tmp.charAt(0) == ')')
+		// 		{
+		// 			dx += tableCell.geometry.width + 40;
+		// 			tableCell = null;
+		// 		}
+		// 		else if (tmp != '(' && tableCell != null)
+		// 		{
+		// 			var name = tmp.substring(0, (tmp.charAt(tmp.length - 1) == ',') ? tmp.length - 1 : tmp.length);
+					
+		// 			if (name.substring(0, 11).toLowerCase() != 'primary key')
+		// 			{
+		// 				var pk = name.toLowerCase().indexOf('primary key');
+		// 				name = name.replace(/primary key/i, '');
+						
+		// 				var rowCell = new mxCell('', new mxGeometry(0, 0, 160, 30),
+		// 					'shape=partialRectangle;collapsible=0;dropTarget=0;pointerEvents=0;fillColor=none;' +
+		// 					'points=[[0,0.5],[1,0.5]];portConstraint=eastwest;top=0;left=0;right=0;bottom=' +
+		// 					((pk > 0) ? '1' : '0') + ';');
+		// 				rowCell.vertex = true;
+						
+		// 				var left = new mxCell((pk > 0) ? 'PK' : '', new mxGeometry(0, 0, 30, 30),
+		// 					'shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;' + ((pk > 0) ? 'fontStyle=1;' : ''));
+		// 				left.vertex = true;
+		// 				rowCell.insert(left);
+						
+		// 				var right = new mxCell(name, new mxGeometry(30, 0, 130, 30),
+		// 					'shape=partialRectangle;overflow=hidden;connectable=0;fillColor=none;top=0;left=0;bottom=0;right=0;align=left;spacingLeft=6;' + ((pk > 0) ? 'fontStyle=5;' : ''));
+		// 				right.vertex = true;
+		// 				rowCell.insert(right);
+						
+		// 	   			var size = editorUi.editor.graph.getPreferredSizeForCell(right);
+			   			
+		// 	   			if (size != null && tableCell.geometry.width < size.width + 30)
+		// 	   			{
+		// 	   				tableCell.geometry.width = Math.min(320, Math.max(tableCell.geometry.width, size.width + 30));
+		// 	   			}
+			   			
+		// 	   			tableCell.insert(rowCell);
+		// 	   			tableCell.geometry.height += 30;
+		// 			}
+		// 		}
+		// 	}
+			
+		// 	if (cells.length > 0)
+		// 	{
+		// 		var graph = editorUi.editor.graph;
+		// 		insertPoint = (mxEvent.isAltDown(evt)) ? insertPoint :
+		// 			graph.getCenterInsertPoint(graph.getBoundingBoxFromGeometry(cells, true));
+		// 		graph.setSelectionCells(graph.importCells(cells, insertPoint.x, insertPoint.y));
+		// 		graph.scrollCellToVisible(graph.getSelectionCell());
+		// 	}
+		// }
 		else if (type == 'list')
 		{
 			if (lines.length > 0)

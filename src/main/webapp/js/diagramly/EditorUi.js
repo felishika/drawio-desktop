@@ -7093,7 +7093,51 @@
 			delayed();
 		}
 	};
-	
+
+
+
+	/**
+	 * Import the diagram from SQL
+	 */
+	EditorUi.prototype.importSql = function(text)
+	{
+		var delayed = mxUtils.bind(this, function()
+		{
+			this.loadingExtensions = false;
+			
+			if (typeof SqlImport  !== 'undefined')
+			{
+				try
+				{
+					var impSuccess = new SqlImport(this).parseSql(text);
+					
+					if (!impSuccess)
+					{
+						this.handleError({message: mxResources.get('unknownError')});
+					}					
+				}
+				catch (e)
+				{
+					this.handleError(e);
+				}
+			}
+			else
+			{
+				this.spinner.stop();
+				this.handleError({message: mxResources.get('serviceUnavailableOrBlocked')});
+			}
+		});
+		
+		if (typeof SqlImport === 'undefined' && !this.loadingExtensions && !this.isOffline(true))
+		{
+			this.loadingExtensions = true;
+			mxscript('js/extensions.min.js', delayed);
+		}
+		else
+		{
+			delayed();
+		}
+	};
 
 	/**
 	 * Imports the given Lucidchart data.

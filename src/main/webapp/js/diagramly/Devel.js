@@ -235,6 +235,7 @@ mxscript(drawDevUrl + 'js/jszip/jszip.min.js');
 
 // Sql support
 mxscript(drawDevUrl + 'js/diagramly/sql/SqlExport.js');
+mxscript(drawDevUrl + 'js/diagramly/sql/SqlImport.js');
 
 // GraphMl Import
 mxscript(drawDevUrl + 'js/diagramly/graphml/mxGraphMlCodec.js');

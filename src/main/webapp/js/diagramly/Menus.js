@@ -762,6 +762,11 @@
 		{
 			editorUi.exportSql();
 		}));
+
+		editorUi.actions.put('importSql', new Action(mxResources.get('formatSql') + '...', function()
+		{
+			editorUi.importSql();
+		}));
 		
 		if (isLocalStorage && localStorage != null && urlParams['embed'] != '1')
 		{
