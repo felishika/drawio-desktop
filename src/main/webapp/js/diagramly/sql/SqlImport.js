@@ -478,7 +478,7 @@ function SqlImport(editorui){
 
             const edgeGeometry = getEdgeGeometry(sourceGeometry, targetGeometry);
             
-            const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;FKName=${ForeignKeyName};FKSource=${PrimaryKeyTableName};FKTarget=${ReferencesTableName};FKSourceProp=${PrimaryKeyName};FKDestination=${ReferencesPropertyName};`, edgeGeometry)
+            const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;FKName=${ForeignKeyName};FKSource=${PrimaryKeyTableName};FKTarget=${ReferencesTableName};FKSourceProp=${PrimaryKeyName};FKDestination=${ReferencesPropertyName};PhysicalEdge=true;`, edgeGeometry)
             edgeCells.push(edge);
         })
 
