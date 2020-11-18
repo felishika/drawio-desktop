@@ -11,6 +11,36 @@ function SqlImport(editorui){
     var exportedTables = 0;
 
     var edgeCells = [];
+    var exCells = [];
+    var exEdgeCells = [];
+
+    function scanGraph(){
+        const graph = editorui.editor.graph;
+        var layers = graph.model.getChildCells(graph.model.root);
+        if(layers.length !== 1){
+            return;
+        }
+
+        scanChildren(layers[0]);
+    }
+
+    function scanChildren(cell) {
+        const style = cell.getStyle();
+        if(style != null && style.indexOf('PhysicalTable') != -1){
+            exCells.push(cell);
+            return;
+        }
+        
+        if(style != null && style.indexOf('PhysicalEdge') != -1){
+            exEdgeCells.push(cell);
+        }
+
+        if(cell.children == null || cell.children.length === 0){
+            return;
+        }
+
+        cell.children.forEach(cell => scanChildren(cell));
+    }
 
     function TableModel() {
         this.Name = null;
@@ -401,6 +431,9 @@ function SqlImport(editorui){
         //Process Foreign Keys
         ProcessForeignKey();
 
+        // Collect existing table and edge cells;
+        scanGraph();
+
         //Create Table in UI
         CreateTableUI();
 
@@ -467,20 +500,58 @@ function SqlImport(editorui){
     
     }
 
+    function edgeExists(fk){
+        const {ForeignKeyPropertyName, ReferencesPropertyName, ForeignKeyName, isDestination, ForeignKeyTableName, ReferencesTableName,} = fk;
+
+        const fkName = `FKName=${ForeignKeyName}`;
+        const fkTableName = `FKTableName=${ForeignKeyTableName}`;
+        const fKRefTableName = `FKRefTableName=${ReferencesTableName}`;
+        const fkPropName = `FKPropName=${ForeignKeyPropertyName}`;
+        const fKRefPropName = `FKRefPropName=${ReferencesPropertyName}`;
+            
+
+        exEdgeCells.some(cell => {const style = cell.getStyle();
+            if(style != null && 
+                (style.includes(fkName) && 
+                 style.includes(fkTableName) &&
+                 style.includes(fKRefTableName) &&
+                 style.includes(fkPropName) &&
+                 style.includes(fKRefPropName))){
+                
+                    return true;
+            }
+            
+            return false;})
+        
+    }
+
+    function tableExists(table) {
+        return exCells.some(cell => {
+            return cell.value === table.Name;
+        });
+    }
+
     function CreateEdgeUI(){
         foreignKeyList.forEach(foreignKey => {
 
             const {ForeignKeyPropertyName, ReferencesPropertyName, ForeignKeyName, isDestination, ForeignKeyTableName, ReferencesTableName,} = foreignKey;
-            const source = cells.find(cell => cell.value === ReferencesTableName);            
-            const target = cells.find(cell => cell.value === ForeignKeyTableName); 
-
-            const sourceGeometry = source?.geometry;
-            const targetGeometry = target?.geometry;
-
-            const edgeGeometry = getEdgeGeometry(sourceGeometry, targetGeometry);
+            const hasEdge = edgeExists(foreignKey); 
+            if(!hasEdge){
+                const source = cells.find(cell => cell.value === ReferencesTableName);            
+                const target = cells.find(cell => cell.value === ForeignKeyTableName); 
+    
+                const sourceGeometry = source?.geometry;
+                const targetGeometry = target?.geometry;
+    
+                const edgeGeometry = getEdgeGeometry(sourceGeometry, targetGeometry);
+                const addStyles = `FKName=${ForeignKeyName};FKTableName=${ForeignKeyTableName};FKRefTableName=${ReferencesTableName};FKPropName=${ForeignKeyPropertyName};FKRefPropName=${ReferencesPropertyName};PhysicalEdge=true;`;
+                
+                
+    
+                const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;${addStyles}`, edgeGeometry)
+                edgeCells.push(edge);
+            }
             
-            const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;FKName=${ForeignKeyName};FKTableName=${ForeignKeyTableName};FKRefTableName=${ReferencesTableName};FKPropName=${ForeignKeyPropertyName};FKRefPropName=${ReferencesPropertyName};PhysicalEdge=true;`, edgeGeometry)
-            edgeCells.push(edge);
         })
 
         // if (edgeCells.length > 0) {
@@ -500,6 +571,8 @@ function SqlImport(editorui){
     function CreateTableUI() {
 
         tableList.forEach(function(tableModel) {
+            const hasTable = tableExists(tableModel);
+            if(!hasTable){
             //Define table size width
             var maxNameLenght = 100 + tableModel.Name.length;
 
@@ -537,6 +610,7 @@ function SqlImport(editorui){
             dx += tableCell.geometry.width + 40;
 
             tableCell = null;
+            }
         });
                 
     };
