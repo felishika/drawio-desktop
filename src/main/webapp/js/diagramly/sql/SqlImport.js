@@ -451,26 +451,7 @@ function SqlImport(editorui){
             edge.geometry.setTerminalPoint(new mxPoint(geometry.x, geometry.y), true);
 	        edge.geometry.setTerminalPoint(new mxPoint(geometry.x + geometry.width, geometry.height), false);
 			edge.geometry.relative = true;
-			edge.edge = true;
-			
-			if (geometry.x != null)
-			{
-		    	var cell1 = new mxCell(geometry.x, new mxGeometry(-1, 0, 0, 0), 'resizable=0;html=1;align=left;verticalAlign=bottom;');
-		    	cell1.geometry.relative = true;
-		    	cell1.setConnectable(false);
-		    	cell1.vertex = true;
-		    	edge.insert(cell1);
-			}
-			
-			if (geometry.width != null)
-			{
-		    	var cell2 = new mxCell(geometry.width, new mxGeometry(1, 0, 0, 0), 'resizable=0;html=1;align=right;verticalAlign=bottom;');
-		    	cell2.geometry.relative = true;
-		    	cell2.setConnectable(false);
-		    	cell2.vertex = true;
-		    	edge.insert(cell2);
-			}
-			
+			edge.edge = true;			
 			return edge;
     }
 
@@ -532,14 +513,19 @@ function SqlImport(editorui){
     }
 
     function CreateEdgeUI(){
+        
+        const allTableCells = [...exCells, ...cells];
+
         foreignKeyList.forEach(foreignKey => {
 
             const {ForeignKeyPropertyName, ReferencesPropertyName, ForeignKeyName, isDestination, ForeignKeyTableName, ReferencesTableName,} = foreignKey;
             const hasEdge = edgeExists(foreignKey); 
             if(!hasEdge){
-                const source = cells.find(cell => cell.value === ReferencesTableName);            
-                const target = cells.find(cell => cell.value === ForeignKeyTableName); 
+                const source = allTableCells.find(cell => cell.value === ReferencesTableName);
+                const target = allTableCells.find(cell => cell.value === ForeignKeyTableName); 
     
+               
+
                 const sourceGeometry = source?.geometry;
                 const targetGeometry = target?.geometry;
     
@@ -548,24 +534,14 @@ function SqlImport(editorui){
                 
                 
     
-                const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;${addStyles}`, edgeGeometry)
-                edgeCells.push(edge);
+                const edge = createEdge(`edgeStyle=entityRelationEdgeStyle;fontSize=12;html=1;endArrow=ERoneToMany;${addStyles}`, edgeGeometry);
+                edge.target = target;
+                edge.source = source;
+                edgeCells.push(edge);               
             }
             
         })
-
-        // if (edgeCells.length > 0) {
-        //     var graph = editorui.editor.graph;
-        //     var view = graph.view;
-        //     var bds = graph.getGraphBounds();
-
-        //     // Computes unscaled, untranslated graph bounds
-        //     var x = Math.ceil(Math.max(0, bds.x / view.scale - view.translate.x) + 4 * graph.gridSize);
-        //     var y = Math.ceil(Math.max(0, (bds.y + bds.height) / view.scale - view.translate.y) + 4 * graph.gridSize);
-
-        //     graph.setSelectionCells(graph.importCells(edgeCells, x, y));
-        //     graph.scrollCellToVisible(graph.getSelectionCell());
-        // }  
+        
     }
 
     function CreateTableUI() {
@@ -617,9 +593,11 @@ function SqlImport(editorui){
 
     function CreateFullUI() {
         const allCells = [...cells, ...edgeCells];
-
+        
         if (allCells.length > 0) {
             var graph = editorui.editor.graph;
+            const model = editorui.editor.graph.model;
+            model.maintainEdgeParent = false;
             var view = graph.view;
             var bds = graph.getGraphBounds();
 
@@ -627,7 +605,15 @@ function SqlImport(editorui){
             var x = Math.ceil(Math.max(0, bds.x / view.scale - view.translate.x) + 4 * graph.gridSize);
             var y = Math.ceil(Math.max(0, (bds.y + bds.height) / view.scale - view.translate.y) + 4 * graph.gridSize);
 
-            graph.setSelectionCells(graph.importCells(allCells, x, y));
+            const mapping = [...exCells, ...exEdgeCells].reduce((res, obj) => { 
+                const key = obj.mxObjectId;
+                if(key != null && res[key] == null){
+                    res[key] = obj;
+                }
+                return res;
+            }, {});
+
+            graph.setSelectionCells(graph.importCells(allCells, x, y, undefined, undefined, mapping));
             graph.scrollCellToVisible(graph.getSelectionCell());
         }
     }
